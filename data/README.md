@@ -9,7 +9,7 @@
 - **下载链接**：https://archive.ics.uci.edu/dataset/601/predictive+maintenance+dataset
 - **原始论文**：S. Matzka, "Explainable Artificial Intelligence for Predictive Maintenance Applications", AI4I 2020, doi:10.1109/AI4I49448.2020.00023
 - **规模**：10,000 条记录 × 14 列，无缺失值
-- **场景**：铣床设备运行快照，用于预测性维护（故障分类 / 异常检测 / 维护排程）
+- **场景**：铣床设备运行，用于预测性维护（故障分类 / 异常检测 / 维护排程）
 
 ## 原始字段（14 列）
 
