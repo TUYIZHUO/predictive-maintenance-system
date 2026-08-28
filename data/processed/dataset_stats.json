@@ -1,0 +1,78 @@
+{
+  "数据来源": {
+    "名称": "AI4I 2020 Predictive Maintenance Dataset",
+    "来源": "UCI Machine Learning Repository (ID=601)",
+    "论文": "S. Matzka, \"Explainable AI for Predictive Maintenance\", AI4I 2020, doi:10.1109/AI4I49448.2020.00023",
+    "原始规模": "10000 行 × 14 列",
+    "缺失值": "无"
+  },
+  "特征工程": {
+    "输入维度": 8,
+    "数值特征(5)": [
+      "air_temperature_[k]",
+      "process_temperature_[k]",
+      "rotational_speed_[rpm]",
+      "torque_[nm]",
+      "tool_wear_[min]"
+    ],
+    "One-Hot特征(3)": [
+      "type_L",
+      "type_M",
+      "type_H"
+    ],
+    "标准化方法": "StandardScaler (仅 fit 训练集数值特征)"
+  },
+  "标签信息": {
+    "二分类": {
+      "含义": "Machine failure (0=正常, 1=故障)",
+      "总体分布": {
+        "正常": 9661,
+        "故障": 339,
+        "故障率": "3.39%"
+      }
+    },
+    "多分类": {
+      "含义": "5 种故障模式 + 无故障",
+      "类别映射": {
+        "0": "No_Failure",
+        "1": "TWF",
+        "2": "HDF",
+        "3": "PWF",
+        "4": "OSF",
+        "5": "RNF"
+      },
+      "总体分布": {
+        "No_Failure": 9652,
+        "TWF": 42,
+        "HDF": 106,
+        "PWF": 83,
+        "OSF": 98,
+        "RNF": 19
+      }
+    }
+  },
+  "数据集划分": {
+    "比例": "7 : 1.5 : 1.5",
+    "训练集": 7000,
+    "验证集": 1500,
+    "测试集": 1500
+  },
+  "SMOTE过采样": {
+    "实现方式": "手动 numpy 实现（无需 imbalanced-learn）",
+    "应用范围": "仅训练集",
+    "3D处理策略": "展平(n, seq*n_feat) → SMOTE → reshape(n, seq, n_feat)",
+    "序列长度": 10,
+    "过采样后训练集(二分类)": 13508,
+    "过采样后训练集(多分类)": 40494,
+    "过采样后二分类分布": {
+      "正常": 6754,
+      "故障": 6754
+    }
+  },
+  "产出文件": {
+    "scaler": "data/processed/scaler.pkl",
+    "label_encoder": "data/processed/label_encoder.pkl",
+    "2D数据": "data/processed/splits_2d.npz",
+    "3D序列": "data/processed/splits_3d.npz"
+  }
+}
