@@ -72,6 +72,22 @@ predictive-maintenance/
 | OSF | 过载故障（Overstrain Failure） | 0/1 |
 | RNF | 随机故障（Random Failures） | 0/1 |
 
+## 许可
+
+该数据集为公开学术数据集，由 S. Matzka 等人于 AI4I 2020 发布，仅供学术研究与教学使用，
+具体许可以 UCI 数据集页面标注为准。
+
+## 数据预处理
+
+预处理程序 `data/preprocess.py` 完成以下工作：
+
+1. **清洗**：缺失值检查（无缺失）、删除 ID 列、统一列名
+2. **编码**：产品类型 Type(L/M/H) One-Hot；故障标签编码为二分类(0/1)与多分类(6 类)
+3. **标准化**：5 个数值特征做 StandardScaler（仅训练集拟合，避免数据泄漏）
+4. **划分**：按 7:1.5:1.5 划分训练/验证/测试集（7000 / 1500 / 1500）
+5. **序列构建**：滑动窗口（长度 10）构建 3D 序列供 LSTM 使用
+6. **过采样**：手动实现 SMOTE，仅训练集缓解 3.39% 故障不平衡
+
 ## 预处理后特征（8 维）
 
 | 维度 | 特征 | 说明 |
@@ -92,6 +108,9 @@ predictive-maintenance/
 | 3 PWF | 电源故障 | 83 |
 | 4 OSF | 过载故障 | 98 |
 | 5 RNF | 随机故障 | 19 |
+产出文件位于 `data/processed/`：`splits_2d.npz`（传统 ML）、`splits_3d.npz`（LSTM）、
+`scaler.pkl`、`label_encoder.pkl`、`dataset_stats.json`（数据统计）、
+`feature_stats.csv`（数值特征描述统计）。
 
 ## 目录结构
 
@@ -108,25 +127,6 @@ data/
 │   └── feature_stats.csv # 数值特征描述统计
 └── preprocess.py         # 预处理脚本（清洗/编码/标准化/划分/序列/SMOTE）
 ```
-
-## 许可
-
-该数据集为公开学术数据集，由 S. Matzka 等人于 AI4I 2020 发布，仅供学术研究与教学使用，
-具体许可以 UCI 数据集页面标注为准。
-## 数据预处理
-
-预处理程序 `data/preprocess.py` 完成以下工作：
-
-1. **清洗**：缺失值检查（无缺失）、删除 ID 列、统一列名
-2. **编码**：产品类型 Type(L/M/H) One-Hot；故障标签编码为二分类(0/1)与多分类(6 类)
-3. **标准化**：5 个数值特征做 StandardScaler（仅训练集拟合，避免数据泄漏）
-4. **划分**：按 7:1.5:1.5 划分训练/验证/测试集（7000 / 1500 / 1500）
-5. **序列构建**：滑动窗口（长度 10）构建 3D 序列供 LSTM 使用
-6. **过采样**：手动实现 SMOTE，仅训练集缓解 3.39% 故障不平衡
-
-产出文件位于 `data/processed/`：`splits_2d.npz`（传统 ML）、`splits_3d.npz`（LSTM）、
-`scaler.pkl`、`label_encoder.pkl`、`dataset_stats.json`（数据统计）、
-`feature_stats.csv`（数值特征描述统计）。
 
 ## 快速开始
 
