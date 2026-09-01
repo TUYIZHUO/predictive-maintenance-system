@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""前端看板：Streamlit。视觉规范（机能工业风：奶杏 + 深海灰 + 火星橙）见 .streamlit/config.toml。
+"""前端看板：Streamlit。视觉规范（机能工业风：奶杏 + 深海灰 + 火星橙）由启动命令 --theme.* 参数配置（见 启动.bat / 启动说明.txt）。
 
 启动（在项目根目录）：
-    streamlit run frontend/app.py
+    streamlit run frontend/app.py --theme.primaryColor "#EB6127" --theme.backgroundColor "#152639" --theme.secondaryBackgroundColor "#1C2F44" --theme.textColor "#F1DDBC"
 """
 import pandas as pd
 import requests
