@@ -4,9 +4,14 @@
 启动（在项目根目录）：
     streamlit run frontend/app.py --theme.primaryColor "#EB6127" --theme.backgroundColor "#152639" --theme.secondaryBackgroundColor "#1C2F44" --theme.textColor "#F1DDBC"
 """
+import matplotlib
 import pandas as pd
 import requests
 import streamlit as st
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 
 API = "http://127.0.0.1:8000"
 
@@ -85,6 +90,9 @@ DEVICE_COLS = ["device_id", "risk", "downtime_cost", "resource", "maintenance_ti
 FEATURE_RENAME = {"air_temperature": "空气温度", "process_temperature": "工艺温度",
                   "rotational_speed": "转速", "torque": "扭矩",
                   "tool_wear": "刀具磨损", "type": "类型"}
+DEVICE_RENAME = {"device_id": "设备编号", "risk": "故障风险",
+                 "downtime_cost": "停机损失(元/时)", "resource": "资源(工时)",
+                 "maintenance_time": "维护耗时(时)"}
 
 
 def read_excel(uploaded, cols):
@@ -105,6 +113,57 @@ def read_excel(uploaded, cols):
 
 def backend_error():
     st.error("后端调用失败，请先启动后端服务（uvicorn backend.main:app）")
+
+
+# 风险等级配色（与页面状态徽章一致：绿=低、橙=中、红=高）
+RISK_COLORS = {0: "#4ADE80", 1: "#F98E5A", 2: "#F87171"}
+RISK_LABELS = {0: "低风险", 1: "中风险", 2: "高风险"}
+
+
+def draw_gantt(plan):
+    """把维护计划画成甘特图：横轴为维护批次（天），纵轴为设备，颜色代表风险等级。"""
+    plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei"]
+    plt.rcParams["axes.unicode_minus"] = False
+
+    rows = sorted(plan, key=lambda p: p["priority"])   # 优先级 1→N
+    n = len(rows)
+    max_day = max(p["batch_day"] for p in rows)
+
+    fig, ax = plt.subplots(figsize=(8.5, max(3.0, n * 0.55)))
+    fig.patch.set_facecolor("#152639")
+    ax.set_facecolor("#152639")
+
+    for i, p in enumerate(rows):
+        y = n - 1 - i                      # 优先级 1 排在最上面
+        ax.barh(y, 0.9, left=p["batch_day"], height=0.62,
+                color=RISK_COLORS.get(p["risk_level"], "#F98E5A"),
+                edgecolor="#152639", zorder=3)
+
+    ax.set_yticks(range(n))
+    ax.set_yticklabels([p["device_id"] for p in reversed(rows)],
+                       color="#F1DDBC", fontsize=9)
+    ax.set_xlim(-0.05, max_day + 1)
+    ax.set_xticks([d + 0.5 for d in range(max_day + 1)])
+    ax.set_xticklabels([f"第 {d + 1} 天" for d in range(max_day + 1)],
+                       color="#F1DDBC", fontsize=9)
+    ax.set_xlabel("维护批次", color="#F1DDBC", fontsize=10)
+    ax.set_title("维护排程甘特图", color="#F1DDBC", fontsize=13,
+                 fontweight="bold", pad=10)
+
+    ax.grid(axis="x", color="#2A4058", linewidth=0.6, alpha=0.5)
+    ax.set_axisbelow(True)
+    for sp in ax.spines.values():
+        sp.set_color("#2A4058")
+    ax.tick_params(colors="#F1DDBC", length=0)
+
+    handles = [Patch(facecolor=RISK_COLORS[k], edgecolor="#152639",
+                     label=RISK_LABELS[k]) for k in (0, 1, 2)]
+    ax.legend(handles=handles, loc="upper right", frameon=True,
+              facecolor="#1C2F44", edgecolor="#2A4058",
+              labelcolor="#F1DDBC", fontsize=8)
+
+    fig.tight_layout()
+    return fig
 
 
 # ---------------------------------------------------------------------------
@@ -187,6 +246,9 @@ elif page == "故障预测":
             if err:
                 st.error(err)
             else:
+                st.markdown("**导入数据预览**")
+                st.dataframe(pd.DataFrame(recs).rename(columns=FEATURE_RENAME),
+                             use_container_width=True, hide_index=True)
                 rows = []
                 for rec in recs:
                     r = requests.post(f"{API}/predict", json=rec)
@@ -252,6 +314,9 @@ elif page == "异常检测":
             if err:
                 st.error(err)
             else:
+                st.markdown("**导入数据预览**")
+                st.dataframe(pd.DataFrame(recs).rename(columns=FEATURE_RENAME),
+                             use_container_width=True, hide_index=True)
                 r = requests.post(f"{API}/anomaly", json={"sequence": recs})
                 if r.status_code == 200:
                     d = r.json()
@@ -316,6 +381,9 @@ elif page == "维护排程":
             if err:
                 st.error(err)
             else:
+                st.markdown("**导入数据预览**")
+                st.dataframe(pd.DataFrame(recs).rename(columns=DEVICE_RENAME),
+                             use_container_width=True, hide_index=True)
                 capacity_x = st.number_input("每日资源上限", 1.0, 100.0, 6.0, key="cap_excel")
                 if st.button("求解", type="primary", key="schedule_excel_btn"):
                     r = requests.post(f"{API}/schedule",
@@ -324,6 +392,8 @@ elif page == "维护排程":
                         d = r.json()
                         with st.container(border=True):
                             st.metric("最小总损失", d["total_loss"])
+                            st.markdown("**维护排程甘特图**")
+                            st.pyplot(draw_gantt(d["plan"]))
                             st.markdown("**维护排程计划**")
                             st.dataframe(pd.DataFrame(d["plan"]),
                                          use_container_width=True, hide_index=True)
@@ -354,6 +424,8 @@ elif page == "维护排程":
                 d = r.json()
                 with st.container(border=True):
                     st.metric("最小总损失", d["total_loss"])
+                    st.markdown("**维护排程甘特图**")
+                    st.pyplot(draw_gantt(d["plan"]))
                     st.markdown("**维护排程计划**")
                     st.dataframe(pd.DataFrame(d["plan"]),
                                  use_container_width=True, hide_index=True)
